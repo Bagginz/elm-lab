@@ -1,4 +1,16 @@
 {
-    "elm.compiler": "./node_modules/.bin/elm",
-    "elm.makeCommand": "./node_modules/.bin/elm-make"
+    "editor.formatOnSave": true,
+    "eslint.autoFixOnSave": true,
+    "eslint.enable": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/elm-stuff": true,
+        ".cache": true,
+        "package-lock.json": true,
+        "dist": true
+    },
+    "[elm]": {
+        "editor.formatOnSave": true
+    },
 }

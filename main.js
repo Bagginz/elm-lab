@@ -4310,25 +4310,31 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Main$Model = F2(
-	function (username, password) {
-		return {password: password, username: username};
+var author$project$Main$Model = F3(
+	function (username, password, login) {
+		return {login: login, password: password, username: username};
 	});
-var author$project$Main$init = A2(author$project$Main$Model, '', '');
+var author$project$Main$init = A3(author$project$Main$Model, '', '', '');
 var author$project$Main$update = F2(
 	function (msg, model) {
-		if (msg.$ === 'Username') {
-			var username = msg.a;
-			return _Utils_update(
-				model,
-				{username: username});
-		} else {
-			var password = msg.a;
-			return _Utils_update(
-				model,
-				{password: password});
+		switch (msg.$) {
+			case 'Username':
+				var username = msg.a;
+				return _Utils_update(
+					model,
+					{username: username});
+			case 'Password':
+				var password = msg.a;
+				return _Utils_update(
+					model,
+					{password: password});
+			default:
+				return _Utils_update(
+					model,
+					{login: 'Login!!'});
 		}
 	});
+var author$project$Main$Login = {$: 'Login'};
 var author$project$Main$Password = function (a) {
 	return {$: 'Password', a: a};
 };
@@ -4969,6 +4975,22 @@ var elm$html$Html$Attributes$width = function (n) {
 		'width',
 		elm$core$String$fromInt(n));
 };
+var elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		elm$html$Html$Events$on,
+		'click',
+		elm$json$Json$Decode$succeed(msg));
+};
 var author$project$Main$view = function (model) {
 	return A2(
 		elm$html$Html$div,
@@ -5023,7 +5045,8 @@ var author$project$Main$view = function (model) {
 						_List_fromArray(
 							[
 								elm$html$Html$Attributes$class('btn btn-lg btn-primary btn-block'),
-								A2(elm$html$Html$Attributes$style, 'margin-top', '15px')
+								A2(elm$html$Html$Attributes$style, 'margin-top', '15px'),
+								elm$html$Html$Events$onClick(author$project$Main$Login)
 							]),
 						_List_fromArray(
 							[
@@ -5043,6 +5066,13 @@ var author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(model.password)
+					])),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.login)
 					]))
 			]));
 };
