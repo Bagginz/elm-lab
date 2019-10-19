@@ -4485,7 +4485,7 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Main$initialModel = {password: '', username: ''};
+var author$project$Main$initialModel = {login: 'false', password: '', username: ''};
 var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
@@ -4973,6 +4973,51 @@ var author$project$Main$subscriptions = function (model) {
 };
 var author$project$Main$LoginResponse = function (a) {
 	return {$: 'LoginResponse', a: a};
+};
+var elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			elm$core$List$foldl,
+			F2(
+				function (_n0, obj) {
+					var k = _n0.a;
+					var v = _n0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var elm$json$Json$Encode$string = _Json_wrap;
+var author$project$Main$jsonRequestEncoder = function (model) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'username',
+				elm$json$Json$Encode$string(model.username)),
+				_Utils_Tuple2(
+				'password',
+				elm$json$Json$Encode$string(model.password))
+			]));
+};
+var elm$core$Result$mapError = F2(
+	function (f, result) {
+		if (result.$ === 'Ok') {
+			var v = result.a;
+			return elm$core$Result$Ok(v);
+		} else {
+			var e = result.a;
+			return elm$core$Result$Err(
+				f(e));
+		}
+	});
+var elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var elm$core$Basics$identity = function (x) {
+	return x;
 };
 var elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var elm$core$Dict$empty = elm$core$Dict$RBEmpty_elm_builtin;
@@ -5528,26 +5573,6 @@ var elm$http$Http$Sending = function (a) {
 	return {$: 'Sending', a: a};
 };
 var elm$http$Http$Timeout_ = {$: 'Timeout_'};
-var elm$http$Http$emptyBody = _Http_emptyBody;
-var elm$core$Result$mapError = F2(
-	function (f, result) {
-		if (result.$ === 'Ok') {
-			var v = result.a;
-			return elm$core$Result$Ok(v);
-		} else {
-			var e = result.a;
-			return elm$core$Result$Err(
-				f(e));
-		}
-	});
-var elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
-var elm$core$Basics$identity = function (x) {
-	return x;
-};
 var elm$http$Http$expectStringResponse = F2(
 	function (toMsg, toResult) {
 		return A3(
@@ -5604,6 +5629,12 @@ var elm$http$Http$expectJson = F2(
 						A2(elm$json$Json$Decode$decodeString, decoder, string));
 				}));
 	});
+var elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2(elm$json$Json$Encode$encode, 0, value));
+};
 var elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -5856,12 +5887,15 @@ var elm$http$Http$post = function (r) {
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Main$submitCmd = elm$http$Http$post(
-	{
-		body: elm$http$Http$emptyBody,
-		expect: A2(elm$http$Http$expectJson, author$project$Main$LoginResponse, elm$json$Json$Decode$string),
-		url: 'http://localhost:3000/login/checklogin'
-	});
+var author$project$Main$submitCmd = function (model) {
+	return elm$http$Http$post(
+		{
+			body: elm$http$Http$jsonBody(
+				author$project$Main$jsonRequestEncoder(model)),
+			expect: A2(elm$http$Http$expectJson, author$project$Main$LoginResponse, elm$json$Json$Decode$string),
+			url: 'http://localhost:3000/login/checklogin'
+		});
+};
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -5878,11 +5912,16 @@ var author$project$Main$update = F2(
 					{password: password});
 				return _Utils_Tuple2(currentModel, elm$core$Platform$Cmd$none);
 			case 'Login':
-				return _Utils_Tuple2(model, author$project$Main$submitCmd);
+				return _Utils_Tuple2(
+					model,
+					author$project$Main$submitCmd(model));
 			default:
 				if (msg.a.$ === 'Ok') {
-					var questions = msg.a.a;
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					var response = msg.a.a;
+					var loginResponse = _Utils_update(
+						model,
+						{login: response});
+					return _Utils_Tuple2(loginResponse, elm$core$Platform$Cmd$none);
 				} else {
 					var httpError = msg.a.a;
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
@@ -5912,7 +5951,6 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	}
 };
 var elm$html$Html$input = _VirtualDom_node('input');
-var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -6087,6 +6125,13 @@ var author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(model.password)
+					])),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.login)
 					]))
 			]));
 };

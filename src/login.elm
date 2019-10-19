@@ -1,13 +1,12 @@
 module Main exposing (..)
 
--- import Json.Decode.Pipeline exposing (optional, required)
-
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http
-import Json.Decode exposing (Decoder, at, bool, int, list, string, succeed)
+import Json.Decode exposing (Decoder, Error, at, bool, int, list, nullable, string, succeed)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
 
 
@@ -18,12 +17,13 @@ main =
 type alias Model =
     { username : String
     , password : String
+    , login : String
     }
 
 
 initialModel : Model
 initialModel =
-    { username = "", password = "" }
+    { username = "", password = "", login = "false" }
 
 
 init : String -> ( Model, Cmd Msg )
@@ -38,12 +38,28 @@ type Msg
     | LoginResponse (Result Http.Error String)
 
 
-submitCmd : Cmd Msg
-submitCmd =
+jsonResponseDecoder : Decoder Model
+jsonResponseDecoder =
+    succeed Model
+        |> required "username" string
+        |> required "password" string
+        |> required "login" string
+
+
+jsonRequestEncoder : Model -> Encode.Value
+jsonRequestEncoder model =
+    Encode.object
+        [ ( "username", Encode.string model.username )
+        , ( "password", Encode.string model.password )
+        ]
+
+
+submitCmd : Model -> Cmd Msg
+submitCmd model =
     Http.post
         { url = "http://localhost:3000/login/checklogin"
-        , body = Http.emptyBody
-        , expect = Http.expectJson LoginResponse string
+        , body = Http.jsonBody <| jsonRequestEncoder model
+        , expect = Http.expectJson LoginResponse jsonResponseDecoder
         }
 
 
@@ -70,10 +86,14 @@ update msg model =
             ( currentModel, Cmd.none )
 
         Login ->
-            ( model, submitCmd )
+            ( model, submitCmd model )
 
-        LoginResponse (Ok questions) ->
-            ( model, Cmd.none )
+        LoginResponse (Ok response) ->
+            let
+                loginResponse =
+                    { model | login = response }
+            in
+            ( loginResponse, Cmd.none )
 
         LoginResponse (Err httpError) ->
             ( model, Cmd.none )
@@ -89,6 +109,7 @@ view model =
         , div [] [ button [ class "btn btn-lg btn-primary btn-block", style "margin-top" "15px", onClick Login ] [ text "Sign in" ] ]
         , div [] [ text model.username ]
         , div [] [ text model.password ]
+        , div [] [ text model.login ]
         ]
 
 
