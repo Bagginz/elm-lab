@@ -4,8 +4,8 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
-import Http
-import Json.Decode exposing (Decoder, Error, at, bool, int, list, nullable, string, succeed)
+import Http exposing (..)
+import Json.Decode exposing (Decoder, Error, at, bool, field, int, list, map, nullable, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
 
@@ -17,13 +17,14 @@ main =
 type alias Model =
     { username : String
     , password : String
-    , login : String
+    , login : Bool
+    , errorMessage : String
     }
 
 
 initialModel : Model
 initialModel =
-    { username = "", password = "", login = "false" }
+    { username = "", password = "", login = False, errorMessage = "" }
 
 
 init : String -> ( Model, Cmd Msg )
@@ -35,7 +36,7 @@ type Msg
     = Username String
     | Password String
     | Login
-    | LoginResponse (Result Http.Error String)
+    | LoginResponse (Result Http.Error Model)
 
 
 jsonResponseDecoder : Decoder Model
@@ -43,7 +44,8 @@ jsonResponseDecoder =
     succeed Model
         |> required "username" string
         |> required "password" string
-        |> required "login" string
+        |> required "login" bool
+        |> required "errorMessage" string
 
 
 jsonRequestEncoder : Model -> Encode.Value
@@ -52,6 +54,31 @@ jsonRequestEncoder model =
         [ ( "username", Encode.string model.username )
         , ( "password", Encode.string model.password )
         ]
+
+
+errorToString : Http.Error -> String
+errorToString error =
+    case error of
+        BadUrl url ->
+            "The URL " ++ url ++ " was invalid"
+
+        Timeout ->
+            "Unable to reach the server, try again"
+
+        NetworkError ->
+            "Unable to reach the server, check your network connection"
+
+        BadStatus 500 ->
+            "The server had a problem, try again later"
+
+        BadStatus 400 ->
+            "Verify your information and try again"
+
+        BadStatus _ ->
+            "Unknown error"
+
+        BadBody errorMessage ->
+            errorMessage
 
 
 submitCmd : Model -> Cmd Msg
@@ -91,12 +118,16 @@ update msg model =
         LoginResponse (Ok response) ->
             let
                 loginResponse =
-                    { model | login = response }
+                    if response.login then
+                        { model | errorMessage = "SUCCESS" }
+
+                    else
+                        { model | errorMessage = "FAILED" }
             in
             ( loginResponse, Cmd.none )
 
         LoginResponse (Err httpError) ->
-            ( model, Cmd.none )
+            ( { model | errorMessage = errorToString httpError }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -109,7 +140,9 @@ view model =
         , div [] [ button [ class "btn btn-lg btn-primary btn-block", style "margin-top" "15px", onClick Login ] [ text "Sign in" ] ]
         , div [] [ text model.username ]
         , div [] [ text model.password ]
-        , div [] [ text model.login ]
+
+        -- , div [] [ text model.login ]
+        , div [] [ text model.errorMessage ]
         ]
 
 

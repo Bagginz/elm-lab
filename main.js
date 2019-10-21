@@ -4485,8 +4485,8 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Main$initialModel = {login: 'false', password: '', username: ''};
 var elm$core$Basics$False = {$: 'False'};
+var author$project$Main$initialModel = {errorMessage: '', login: false, password: '', username: ''};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
 	if (result.$ === 'Ok') {
@@ -4971,6 +4971,29 @@ var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (model) {
 	return elm$core$Platform$Sub$none;
 };
+var author$project$Main$errorToString = function (error) {
+	switch (error.$) {
+		case 'BadUrl':
+			var url = error.a;
+			return 'The URL ' + (url + ' was invalid');
+		case 'Timeout':
+			return 'Unable to reach the server, try again';
+		case 'NetworkError':
+			return 'Unable to reach the server, check your network connection';
+		case 'BadStatus':
+			switch (error.a) {
+				case 500:
+					return 'The server had a problem, try again later';
+				case 400:
+					return 'Verify your information and try again';
+				default:
+					return 'Unknown error';
+			}
+		default:
+			var errorMessage = error.a;
+			return errorMessage;
+	}
+};
 var author$project$Main$LoginResponse = function (a) {
 	return {$: 'LoginResponse', a: a};
 };
@@ -5000,6 +5023,40 @@ var author$project$Main$jsonRequestEncoder = function (model) {
 				elm$json$Json$Encode$string(model.password))
 			]));
 };
+var elm$json$Json$Decode$map2 = _Json_map2;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
+var elm$json$Json$Decode$field = _Json_decodeField;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2(elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var author$project$Main$Model = F4(
+	function (username, password, login, errorMessage) {
+		return {errorMessage: errorMessage, login: login, password: password, username: username};
+	});
+var elm$json$Json$Decode$bool = _Json_decodeBool;
+var elm$json$Json$Decode$string = _Json_decodeString;
+var elm$json$Json$Decode$succeed = _Json_succeed;
+var author$project$Main$jsonResponseDecoder = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'errorMessage',
+	elm$json$Json$Decode$string,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'login',
+		elm$json$Json$Decode$bool,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'password',
+			elm$json$Json$Decode$string,
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'username',
+				elm$json$Json$Decode$string,
+				elm$json$Json$Decode$succeed(author$project$Main$Model)))));
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -5886,13 +5943,12 @@ var elm$http$Http$post = function (r) {
 	return elm$http$Http$request(
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var elm$json$Json$Decode$string = _Json_decodeString;
 var author$project$Main$submitCmd = function (model) {
 	return elm$http$Http$post(
 		{
 			body: elm$http$Http$jsonBody(
 				author$project$Main$jsonRequestEncoder(model)),
-			expect: A2(elm$http$Http$expectJson, author$project$Main$LoginResponse, elm$json$Json$Decode$string),
+			expect: A2(elm$http$Http$expectJson, author$project$Main$LoginResponse, author$project$Main$jsonResponseDecoder),
 			url: 'http://localhost:3000/login/checklogin'
 		});
 };
@@ -5918,13 +5974,21 @@ var author$project$Main$update = F2(
 			default:
 				if (msg.a.$ === 'Ok') {
 					var response = msg.a.a;
-					var loginResponse = _Utils_update(
+					var loginResponse = response.login ? _Utils_update(
 						model,
-						{login: response});
+						{errorMessage: 'SUCCESS'}) : _Utils_update(
+						model,
+						{errorMessage: 'FAILED'});
 					return _Utils_Tuple2(loginResponse, elm$core$Platform$Cmd$none);
 				} else {
 					var httpError = msg.a.a;
-					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMessage: author$project$Main$errorToString(httpError)
+							}),
+						elm$core$Platform$Cmd$none);
 				}
 		}
 	});
@@ -5936,8 +6000,6 @@ var author$project$Main$Username = function (a) {
 	return {$: 'Username', a: a};
 };
 var elm$json$Json$Decode$map = _Json_map1;
-var elm$json$Json$Decode$map2 = _Json_map2;
-var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -5976,7 +6038,6 @@ var elm$html$Html$Events$stopPropagationOn = F2(
 			event,
 			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
 	});
-var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$at = F2(
 	function (fields, decoder) {
 		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
@@ -6131,7 +6192,7 @@ var author$project$Main$view = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						elm$html$Html$text(model.login)
+						elm$html$Html$text(model.errorMessage)
 					]))
 			]));
 };
