@@ -17,33 +17,40 @@ main =
 type alias Model =
     { username : String
     , password : String
-    , login : Bool
-    , errorMessage : String
     }
 
 
 initialModel : Model
 initialModel =
-    { username = "", password = "", login = False, errorMessage = "" }
+    { username = "", password = "" }
 
 
-init : String -> ( Model, Cmd Msg )
+type alias LoginResponseModel =
+    { login : Bool
+    , errorMessage : String
+    }
+
+
+initialLoginResponseModel : LoginResponseModel
+initialLoginResponseModel =
+    { login = False, errorMessage = "" }
+
+
+init : String -> ( Model, LoginResponseModel, Cmd Msg )
 init flags =
-    ( initialModel, Cmd.none )
+    ( initialModel, initialLoginResponseModel, Cmd.none )
 
 
 type Msg
     = Username String
     | Password String
     | Login
-    | LoginResponse (Result Http.Error Model)
+    | LoginResponse (Result Http.Error LoginResponseModel)
 
 
-jsonResponseDecoder : Decoder Model
+jsonResponseDecoder : Decoder LoginResponseModel
 jsonResponseDecoder =
-    succeed Model
-        |> required "username" string
-        |> required "password" string
+    succeed LoginResponseModel
         |> required "login" bool
         |> required "errorMessage" string
 
@@ -90,6 +97,15 @@ submitCmd model =
         }
 
 
+responseLoginCmd : Bool -> String -> LoginResponseModel -> Cmd Msg
+responseLoginCmd login error model =
+    if login then
+        { model | errorMessage = "SUCCESS" }
+
+    else
+        { model | errorMessage = "FAILED" }
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
@@ -116,18 +132,18 @@ update msg model =
             ( model, submitCmd model )
 
         LoginResponse (Ok response) ->
-            let
-                loginResponse =
-                    if response.login then
-                        { model | errorMessage = "SUCCESS" }
-
-                    else
-                        { model | errorMessage = "FAILED" }
-            in
-            ( loginResponse, Cmd.none )
+            ( model, responseLoginCmd response.login "null" LoginResponseModel )
 
         LoginResponse (Err httpError) ->
-            ( { model | errorMessage = errorToString httpError }, Cmd.none )
+            let
+                errorcase =
+                    errorToString httpError
+            in
+            ( model, responseLoginCmd False errorcase LoginResponseModel )
+
+
+
+-- ( { model | errorMessage = errorToString httpError }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -142,7 +158,7 @@ view model =
         , div [] [ text model.password ]
 
         -- , div [] [ text model.login ]
-        , div [] [ text model.errorMessage ]
+        -- , div [] [ text model.errorMessage ]
         ]
 
 
