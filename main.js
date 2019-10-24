@@ -4485,8 +4485,8 @@ function _Browser_load(url)
 		}
 	}));
 }
+var author$project$Main$initialModel = {password: '', username: ''};
 var elm$core$Basics$False = {$: 'False'};
-var author$project$Main$initialModel = {errorMessage: '', login: false, password: '', username: ''};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
 	if (result.$ === 'Ok') {
@@ -4994,6 +4994,21 @@ var author$project$Main$errorToString = function (error) {
 			return errorMessage;
 	}
 };
+var author$project$Main$initialLoginResponseModel = {errorMessage: '', login: false};
+var author$project$Main$responseLoginCmd = F3(
+	function (login, error, model) {
+		if (login) {
+			var setResponse = _Utils_update(
+				model,
+				{errorMessage: 'SUCCESS'});
+			return elm$core$Platform$Cmd$none;
+		} else {
+			var setResponse = _Utils_update(
+				model,
+				{errorMessage: 'FAILED'});
+			return elm$core$Platform$Cmd$none;
+		}
+	});
 var author$project$Main$LoginResponse = function (a) {
 	return {$: 'LoginResponse', a: a};
 };
@@ -5033,9 +5048,9 @@ var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			A2(elm$json$Json$Decode$field, key, valDecoder),
 			decoder);
 	});
-var author$project$Main$Model = F4(
-	function (username, password, login, errorMessage) {
-		return {errorMessage: errorMessage, login: login, password: password, username: username};
+var author$project$Main$LoginResponseModel = F2(
+	function (login, errorMessage) {
+		return {errorMessage: errorMessage, login: login};
 	});
 var elm$json$Json$Decode$bool = _Json_decodeBool;
 var elm$json$Json$Decode$string = _Json_decodeString;
@@ -5048,15 +5063,7 @@ var author$project$Main$jsonResponseDecoder = A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'login',
 		elm$json$Json$Decode$bool,
-		A3(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'password',
-			elm$json$Json$Decode$string,
-			A3(
-				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'username',
-				elm$json$Json$Decode$string,
-				elm$json$Json$Decode$succeed(author$project$Main$Model)))));
+		elm$json$Json$Decode$succeed(author$project$Main$LoginResponseModel)));
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -5974,21 +5981,15 @@ var author$project$Main$update = F2(
 			default:
 				if (msg.a.$ === 'Ok') {
 					var response = msg.a.a;
-					var loginResponse = response.login ? _Utils_update(
+					return _Utils_Tuple2(
 						model,
-						{errorMessage: 'SUCCESS'}) : _Utils_update(
-						model,
-						{errorMessage: 'FAILED'});
-					return _Utils_Tuple2(loginResponse, elm$core$Platform$Cmd$none);
+						A3(author$project$Main$responseLoginCmd, response.login, 'null', author$project$Main$initialLoginResponseModel));
 				} else {
 					var httpError = msg.a.a;
+					var errorcase = author$project$Main$errorToString(httpError);
 					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								errorMessage: author$project$Main$errorToString(httpError)
-							}),
-						elm$core$Platform$Cmd$none);
+						model,
+						A3(author$project$Main$responseLoginCmd, false, errorcase, author$project$Main$initialLoginResponseModel));
 				}
 		}
 	});
@@ -6186,13 +6187,6 @@ var author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(model.password)
-					])),
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(model.errorMessage)
 					]))
 			]));
 };

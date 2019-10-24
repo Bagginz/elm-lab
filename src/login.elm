@@ -36,9 +36,9 @@ initialLoginResponseModel =
     { login = False, errorMessage = "" }
 
 
-init : String -> ( Model, LoginResponseModel, Cmd Msg )
+init : String -> ( Model, Cmd Msg )
 init flags =
-    ( initialModel, initialLoginResponseModel, Cmd.none )
+    ( initialModel, Cmd.none )
 
 
 type Msg
@@ -100,10 +100,18 @@ submitCmd model =
 responseLoginCmd : Bool -> String -> LoginResponseModel -> Cmd Msg
 responseLoginCmd login error model =
     if login then
-        { model | errorMessage = "SUCCESS" }
+        let
+            setResponse =
+                { model | errorMessage = "SUCCESS" }
+        in
+        Cmd.none
 
     else
-        { model | errorMessage = "FAILED" }
+        let
+            setResponse =
+                { model | errorMessage = "FAILED" }
+        in
+        Cmd.none
 
 
 subscriptions : Model -> Sub Msg
@@ -132,18 +140,14 @@ update msg model =
             ( model, submitCmd model )
 
         LoginResponse (Ok response) ->
-            ( model, responseLoginCmd response.login "null" LoginResponseModel )
+            ( model, responseLoginCmd response.login "null" initialLoginResponseModel )
 
         LoginResponse (Err httpError) ->
             let
                 errorcase =
                     errorToString httpError
             in
-            ( model, responseLoginCmd False errorcase LoginResponseModel )
-
-
-
--- ( { model | errorMessage = errorToString httpError }, Cmd.none )
+            ( model, responseLoginCmd False errorcase initialLoginResponseModel )
 
 
 view : Model -> Html Msg
