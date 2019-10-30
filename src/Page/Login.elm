@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Page.Login exposing (..)
 
 import Browser
 import Html exposing (..)
@@ -8,11 +8,6 @@ import Http exposing (..)
 import Json.Decode exposing (Decoder, Error, at, bool, field, int, list, map, nullable, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
-
-
-main =
-    Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
-
 
 type alias Model =
     { username : String
