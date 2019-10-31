@@ -28,12 +28,13 @@ initialModel =
 type alias LoginResponseModel =
     { login : Bool
     , errorMessage : String
+    , response : String
     }
 
 
 initialLoginResponseModel : LoginResponseModel
 initialLoginResponseModel =
-    { login = False, errorMessage = "" }
+    { login = False, errorMessage = "", response = "" }
 
 
 init : String -> ( Model, Cmd Msg )
@@ -53,6 +54,7 @@ jsonResponseDecoder =
     succeed LoginResponseModel
         |> required "login" bool
         |> required "errorMessage" string
+        |> required "response" string
 
 
 jsonRequestEncoder : Model -> Encode.Value
@@ -160,12 +162,10 @@ view model =
         , div [] [ button [ class "btn btn-lg btn-primary btn-block", style "margin-top" "15px", onClick Login ] [ text "Sign in" ] ]
         , div [] [ text model.username ]
         , div [] [ text model.password ]
-
-        -- , div [] [ text model.login ]
-        -- , div [] [ text model.errorMessage ]
         ]
 
 
 viewInput : String -> String -> String -> String -> (String -> msg) -> Html msg
 viewInput c t p v toMsg =
     input [ class c, type_ t, placeholder p, value v, onInput toMsg ] []
+

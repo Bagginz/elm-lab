@@ -4994,7 +4994,7 @@ var author$project$Main$errorToString = function (error) {
 			return errorMessage;
 	}
 };
-var author$project$Main$initialLoginResponseModel = {errorMessage: '', login: false};
+var author$project$Main$initialLoginResponseModel = {errorMessage: '', login: false, response: ''};
 var author$project$Main$responseLoginCmd = F3(
 	function (login, error, model) {
 		if (login) {
@@ -5048,22 +5048,26 @@ var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			A2(elm$json$Json$Decode$field, key, valDecoder),
 			decoder);
 	});
-var author$project$Main$LoginResponseModel = F2(
-	function (login, errorMessage) {
-		return {errorMessage: errorMessage, login: login};
+var author$project$Main$LoginResponseModel = F3(
+	function (login, errorMessage, response) {
+		return {errorMessage: errorMessage, login: login, response: response};
 	});
 var elm$json$Json$Decode$bool = _Json_decodeBool;
 var elm$json$Json$Decode$string = _Json_decodeString;
 var elm$json$Json$Decode$succeed = _Json_succeed;
 var author$project$Main$jsonResponseDecoder = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'errorMessage',
+	'response',
 	elm$json$Json$Decode$string,
 	A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'login',
-		elm$json$Json$Decode$bool,
-		elm$json$Json$Decode$succeed(author$project$Main$LoginResponseModel)));
+		'errorMessage',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'login',
+			elm$json$Json$Decode$bool,
+			elm$json$Json$Decode$succeed(author$project$Main$LoginResponseModel))));
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -6071,11 +6075,26 @@ var author$project$Main$viewInput = F5(
 				]),
 			_List_Nil);
 	});
-var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$div = _VirtualDom_node('div');
-var elm$html$Html$img = _VirtualDom_node('img');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var author$project$Main$viewResponse = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.errorMessage)
+					]))
+			]));
+};
+var elm$html$Html$button = _VirtualDom_node('button');
+var elm$html$Html$img = _VirtualDom_node('img');
 var elm$html$Html$Attributes$height = function (n) {
 	return A2(
 		_VirtualDom_attribute,
@@ -6187,6 +6206,13 @@ var author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(model.password)
+					])),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						author$project$Main$viewResponse(author$project$Main$initialLoginResponseModel)
 					]))
 			]));
 };
